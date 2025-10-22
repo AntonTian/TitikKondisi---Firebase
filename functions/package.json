@@ -1,27 +1,23 @@
 {
-  "name": "functions",
-  "description": "Cloud Functions for Firebase",
+  "name": "titikkondisi-api",
+  "version": "1.0.0",
+  "description": "Express API for TitikKondisi deployed on Render",
+  "main": "index.js",
   "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
     "serve": "firebase emulators:start --only functions",
     "shell": "firebase functions:shell",
-    "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log"
   },
   "engines": {
     "node": "20"
   },
-  "main": "index.js",
   "dependencies": {
     "axios": "^1.12.2",
     "cors": "^2.8.5",
     "express": "^5.1.0",
-    "firebase-admin": "^12.6.0",
-    "firebase-functions": "^6.0.1",
     "suncalc": "^1.9.0"
-  },
-  "devDependencies": {
-    "firebase-functions-test": "^3.1.0"
-  },
-  "private": true
+  }
 }

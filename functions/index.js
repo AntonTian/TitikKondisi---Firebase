@@ -45,7 +45,7 @@ async function getConsolidatedData(lat, lon) {
 
 async function fetchWeatherData(lat, lon) {
   const weatherURL = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,precipitation,cloud_cover,uv_index&timezone=auto`;
-  const aqiURL = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=european_aqi&timezone=auto`;
+  const aqiURL = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm2_5,pm10,carbon_monoxide,uv_index&timezone=auto`;
 
   const [weatherResp, aqiResp] = await Promise.all([
     axios.get(weatherURL),
@@ -53,8 +53,11 @@ async function fetchWeatherData(lat, lon) {
   ]);
 
   const w = weatherResp.data.current;
-  const aqiData = aqiResp.data.hourly?.european_aqi || [];
-  const aqi = aqiData[aqiData.length - 1] || 0;
+  const pm25Data = aqiResp.data.hourly?.pm2_5 || [];
+  const pm25 = pm25Data[pm25Data.length - 1] || 0;
+
+  // --- Convert PM2.5 concentration to approximate AQI ---
+  const aqi = pm25ToAQI(pm25);
 
   return {
     temperature: w.temperature_2m,
@@ -63,6 +66,16 @@ async function fetchWeatherData(lat, lon) {
     uv_index: w.uv_index,
     aqi,
   };
+}
+
+// --- Helper: Convert PM2.5 → AQI (US EPA standard) ---
+function pm25ToAQI(pm25) {
+  if (pm25 <= 12) return 50; // Good
+  if (pm25 <= 35.4) return 100; // Moderate
+  if (pm25 <= 55.4) return 150; // Unhealthy for Sensitive
+  if (pm25 <= 150.4) return 200; // Unhealthy
+  if (pm25 <= 250.4) return 300; // Very Unhealthy
+  return 400; // Hazardous
 }
 
 async function fetchSunData(lat, lon) {
@@ -122,4 +135,5 @@ function calculateIndices(weather) {
   };
 }
 
-exports.api = functions.https.onRequest(app);
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, () => console.log(`Server running on port http://localhost:${PORT}`));
