@@ -7,6 +7,10 @@ const app = express();
 app.use(cors({ origin: true }));
 app.use(express.json()); 
 
+app.get("/", (req, res) => {
+  res.send("TitikKondisi API is running!");
+});
+
 // --- Weather data function ---
 app.get("/weather/:lat/:lon", async (req, res) => {
   const { lat, lon } = req.params;
