@@ -5,11 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js",
-    "serve": "firebase emulators:start --only functions",
-    "shell": "firebase functions:shell",
-    "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log"
+    "dev": "nodemon index.js"
   },
   "engines": {
     "node": "20"
@@ -21,3 +17,4 @@
     "suncalc": "^1.9.0"
   }
 }
+
