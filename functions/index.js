@@ -84,7 +84,7 @@ async function fetchWeatherData(lat, lon) {
 
 // --- Rain Prediction (next 6 hours with hourly breakdown) ---
 async function fetchRainPrediction(lat, lon) {
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=precipitation_probability,precipitation&forecast_hours=6&timezone=Asia/Jakarta`;
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=precipitation_probability,precipitation&timezone=Asia/Jakarta`;
 
   const response = await axios.get(url);
   const hourly = response.data.hourly || {};
@@ -103,19 +103,18 @@ async function fetchRainPrediction(lat, lon) {
   }
 
   const now = new Date();
-  const currentIndex = times.findIndex(t => new Date(t) > now);
+  const currentIndex = times.findIndex((t) => new Date(t) > now);
   const start = currentIndex >= 0 ? currentIndex : 0;
 
-  const next6Hours = times.slice(start, start + 6).map((time, i) => {
-    return {
-      duration: `${i + 1} jam lagi`,
-      probability: `${probs[start + i]}%`,     
-      precip_mm: rainAmounts[start + i],
-    };
-  });
+  const next6Hours = times.slice(start, start + 6).map((time, i) => ({
+    duration: `${i + 1} jam lagi`,
+    probability: `${probs[start + i]}%`,
+    precip_mm: rainAmounts[start + i],
+  }));
 
   const maxProb = Math.max(...probs.slice(start, start + 6));
-  const avgRain = rainAmounts.slice(start, start + 6).reduce((a, b) => a + b, 0) / 6;
+  const avgRain =
+    rainAmounts.slice(start, start + 6).reduce((a, b) => a + b, 0) / 6;
 
   let prediction;
   if (maxProb < 20) prediction = "Kemungkinan kecil hujan dalam 6 jam ke depan.";
@@ -123,7 +122,7 @@ async function fetchRainPrediction(lat, lon) {
   else prediction = "Kemungkinan besar hujan lebat dalam 6 jam ke depan.";
 
   return {
-    max_probability: `${maxProb}%`, 
+    max_probability: `${maxProb}%`,
     avg_rain_mm: Number(avgRain.toFixed(2)),
     prediction,
     hourly_forecast: next6Hours,
