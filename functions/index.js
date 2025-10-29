@@ -84,62 +84,51 @@ async function fetchWeatherData(lat, lon) {
 
 // --- Rain Prediction (next 6 hours with hourly breakdown) ---
 async function fetchRainPrediction(lat, lon) {
-  try {
-    if (!lat || !lon || isNaN(lat) || isNaN(lon)) {
-      throw new Error(`Invalid coordinates: lat=${lat}, lon=${lon}`);
-    }
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=precipitation_probability,precipitation&timezone=Asia%2FJakarta`;
 
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=precipitation_probability,precipitation&timezone=Asia/Jakarta`;
-    console.log("🌧️ Open-Meteo request:", url);
+  const response = await axios.get(url);
+  const hourly = response.data.hourly || {};
 
-    const response = await axios.get(url);
-    console.log("✅ Open-Meteo OK:", response.status);
+  const times = hourly.time || [];
+  const probs = hourly.precipitation_probability || [];
+  const rainAmounts = hourly.precipitation || [];
 
-    const hourly = response.data.hourly || {};
-    const times = hourly.time || [];
-    const probs = hourly.precipitation_probability || [];
-    const rainAmounts = hourly.precipitation || [];
-
-    if (probs.length === 0) {
-      return {
-        max_probability: null,
-        avg_rain_mm: null,
-        prediction: "Data hujan tidak tersedia untuk lokasi ini.",
-        hourly_forecast: [],
-      };
-    }
-
-    const now = new Date();
-    const currentIndex = times.findIndex(t => new Date(t) > now);
-    const start = currentIndex >= 0 ? currentIndex : 0;
-
-    const next6Hours = times.slice(start, start + 6).map((time, i) => ({
-      duration: `${i + 1} jam lagi`,
-      probability: `${probs[start + i]}%`,
-      precip_mm: rainAmounts[start + i],
-    }));
-
-    const maxProb = Math.max(...probs.slice(start, start + 6));
-    const avgRain =
-      rainAmounts.slice(start, start + 6).reduce((a, b) => a + b, 0) / 6;
-
-    let prediction;
-    if (maxProb < 20) prediction = "Kemungkinan kecil hujan dalam 6 jam ke depan.";
-    else if (maxProb < 60) prediction = "Kemungkinan hujan ringan atau sedang.";
-    else prediction = "Kemungkinan besar hujan lebat dalam 6 jam ke depan.";
-
+  if (probs.length === 0) {
     return {
-      max_probability: `${maxProb}%`,
-      avg_rain_mm: Number(avgRain.toFixed(2)),
-      prediction,
-      hourly_forecast: next6Hours,
+      max_probability: null,
+      avg_rain_mm: null,
+      prediction: "Data hujan tidak tersedia untuk lokasi ini.",
+      hourly_forecast: [],
     };
-  } catch (err) {
-    console.error("❌ Open-Meteo API error:", err.response?.data || err.message);
-    throw new Error("Open-Meteo rejected the request.");
   }
-}
 
+  const now = new Date();
+  const currentIndex = times.findIndex(t => new Date(t) > now);
+  const start = currentIndex >= 0 ? currentIndex : 0;
+
+  const next6Hours = times.slice(start, start + 6).map((time, i) => {
+    return {
+      duration: `${i + 1} jam lagi`,
+      probability: `${probs[start + i]}%`,     
+      precip_mm: rainAmounts[start + i],
+    };
+  });
+
+  const maxProb = Math.max(...probs.slice(start, start + 6));
+  const avgRain = rainAmounts.slice(start, start + 6).reduce((a, b) => a + b, 0) / 6;
+
+  let prediction;
+  if (maxProb < 20) prediction = "Kemungkinan kecil hujan dalam 6 jam ke depan.";
+  else if (maxProb < 60) prediction = "Kemungkinan hujan ringan atau sedang.";
+  else prediction = "Kemungkinan besar hujan lebat dalam 6 jam ke depan.";
+
+  return {
+    max_probability: `${maxProb}%`, 
+    avg_rain_mm: Number(avgRain.toFixed(2)),
+    prediction,
+    hourly_forecast: next6Hours,
+  };
+}
 
 async function fetchSunData(lat, lon) {
   const now = new Date();
