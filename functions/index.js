@@ -81,7 +81,7 @@ async function fetchWeatherData(lat, lon) {
 
 // --- Rain Prediction (next 6 hours with hourly breakdown) ---
 async function fetchRainPrediction(lat, lon) {
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=precipitation_probability,precipitation&timezone=Asia/Jakarta`;
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=precipitation_probability,precipitation&forecast_hours=6&timezone=Asia/Jakarta`;
 
   const response = await axios.get(url);
   const hourly = response.data.hourly || {};
@@ -99,42 +99,14 @@ async function fetchRainPrediction(lat, lon) {
     };
   }
 
-  const now = new Date();
-  const nowJakarta = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Jakarta" }));
-
-  const hourlyData = times.map((time, i) => ({
-    time: new Date(time),
+  const next6Hours = times.slice(0, 6).map((time, i) => ({
+    duration: `${i + 1} jam lagi`,
     probability: probs[i],
     precip_mm: rainAmounts[i],
   }));
 
-  const next6Hours = hourlyData.filter(d => {
-    const diffHours = (d.time - nowJakarta) / (1000 * 60 * 60);
-    return diffHours > 0 && diffHours <= 6;
-  }).slice(0, 6);
-
-  if (next6Hours.length === 0) {
-    return {
-      max_probability: null,
-      avg_rain_mm: null,
-      prediction: "Tidak ada data cuaca dalam 6 jam ke depan.",
-      hourly_forecast: [],
-    };
-  }
-
-  const hourly_forecast = next6Hours.map(d => ({
-    time: d.time.toLocaleTimeString("id-ID", {
-      timeZone: "Asia/Jakarta",
-      hour: "2-digit",
-      minute: "2-digit",
-    }),
-    probability: d.probability,
-    precip_mm: d.precip_mm,
-  }));
-
-
-  const maxProb = Math.max(...next6Hours.map(d => d.probability));
-  const avgRain = next6Hours.reduce((sum, d) => sum + d.precip_mm, 0) / next6Hours.length;
+  const maxProb = Math.max(...probs.slice(0, 6));
+  const avgRain = rainAmounts.slice(0, 6).reduce((a, b) => a + b, 0) / 6;
 
   let prediction;
   if (maxProb < 20) prediction = "Kemungkinan kecil hujan dalam 6 jam ke depan.";
@@ -145,9 +117,10 @@ async function fetchRainPrediction(lat, lon) {
     max_probability: maxProb,
     avg_rain_mm: Number(avgRain.toFixed(2)),
     prediction,
-    hourly_forecast,
+    hourly_forecast: next6Hours,
   };
 }
+
 
 async function fetchSunData(lat, lon) {
   const now = new Date();
