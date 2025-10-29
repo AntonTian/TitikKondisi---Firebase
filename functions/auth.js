@@ -1,8 +1,18 @@
 const express = require("express");
-const router = express.Router();
 const admin = require("firebase-admin");
+const path = require("path");
+
+// Load service account credentials
+const serviceAccount = require(path.join(__dirname, "serviceAccountKey.json"));
+
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+  });
+}
 
 const db = admin.firestore();
+const router = express.Router();
 
 // register
 router.post("/register", async (req, res) => {
