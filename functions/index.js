@@ -40,6 +40,7 @@ app.post("/weather", async (req, res) => {
 
 app.get("/rain/:lat/:lon", async (req, res) => {
   const { lat, lon } = req.params;
+  console.log("🧭 Received rain request:", lat, lon);
   try {
     const data = await fetchRainPrediction(lat, lon);
     res.json(data);
