@@ -38,9 +38,16 @@ app.post("/weather", async (req, res) => {
   }
 });
 
-app.get("/rain/:lat/:lon", async (req, res) => {
-  const { lat, lon } = req.params;
+app.get("/rain/*", async (req, res) => {
   try {
+    const parts = req.path.split("/");
+    const lat = parseFloat(parts[2]);
+    const lon = parseFloat(parts[3]);
+
+    if (isNaN(lat) || isNaN(lon)) {
+      return res.status(400).json({ error: "Invalid coordinates" });
+    }
+
     const data = await fetchRainPrediction(lat, lon);
     res.json(data);
   } catch (err) {
