@@ -40,6 +40,7 @@ async function getConsolidatedData(lat, lon) {
   const [weather, sun] = await Promise.all([
     fetchWeatherData(lat, lon),
     fetchSunData(lat, lon),
+    fetchRainPrediction(lat, lon),
   ]);
   const moon = calculateMoonPhase();
   const indices = calculateIndices(weather);
@@ -66,6 +67,56 @@ async function fetchWeatherData(lat, lon) {
     cloud_cover: w.cloud_cover,
     uv_index: w.uv_index,
     aqi,
+  };
+}
+
+// --- Rain Prediction (next 6 hours with hourly breakdown) ---
+async function fetchRainPrediction(lat, lon) {
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=precipitation_probability,precipitation&forecast_hours=6&timezone=Asia/Jakarta`;
+
+  const response = await axios.get(url);
+  const hourly = response.data.hourly || {};
+
+  const times = hourly.time || [];
+  const probs = hourly.precipitation_probability || [];
+  const rainAmounts = hourly.precipitation || [];
+
+  if (probs.length === 0) {
+    return {
+      max_probability: null,
+      avg_rain_mm: null,
+      prediction: "Data hujan tidak tersedia untuk lokasi ini.",
+      hourly_forecast: [],
+    };
+  }
+
+  const next6Hours = times.slice(0, 6).map((time, i) => {
+    const date = new Date(time);
+    const formatted = date.toLocaleTimeString("id-ID", {
+      timeZone: "Asia/Jakarta",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    return {
+      time: formatted,
+      probability: probs[i],
+      precip_mm: rainAmounts[i],
+    };
+  });
+
+  const maxProb = Math.max(...probs.slice(0, 6));
+  const avgRain = rainAmounts.slice(0, 6).reduce((a, b) => a + b, 0) / 6;
+
+  let prediction;
+  if (maxProb < 20) prediction = "Kemungkinan kecil hujan dalam 6 jam ke depan.";
+  else if (maxProb < 60) prediction = "Kemungkinan hujan ringan atau sedang.";
+  else prediction = "Kemungkinan besar hujan lebat dalam 6 jam ke depan.";
+
+  return {
+    max_probability: maxProb,
+    avg_rain_mm: Number(avgRain.toFixed(2)),
+    prediction,
+    hourly_forecast: next6Hours,
   };
 }
 
