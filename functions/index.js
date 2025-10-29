@@ -2,10 +2,13 @@ const express = require("express");
 const cors = require("cors");
 const axios = require("axios");
 const SunCalc = require("suncalc");
+const authRoutes = require("./auth"); 
 
 const app = express();
 app.use(cors({ origin: true }));
 app.use(express.json()); 
+
+app.use("/auth", authRoutes); 
 
 app.get("/", (req, res) => {
   res.send("TitikKondisi API is running!");
@@ -99,14 +102,20 @@ async function fetchRainPrediction(lat, lon) {
     };
   }
 
-  const next6Hours = times.slice(0, 6).map((time, i) => ({
-    duration: `${i + 1} jam lagi`,
-    probability: probs[i],
-    precip_mm: rainAmounts[i],
-  }));
+  const now = new Date();
+  const currentIndex = times.findIndex(t => new Date(t) > now);
+  const start = currentIndex >= 0 ? currentIndex : 0;
 
-  const maxProb = Math.max(...probs.slice(0, 6));
-  const avgRain = rainAmounts.slice(0, 6).reduce((a, b) => a + b, 0) / 6;
+  const next6Hours = times.slice(start, start + 6).map((time, i) => {
+    return {
+      duration: `${i + 1} jam lagi`,
+      probability: `${probs[start + i]}%`,     
+      precip_mm: rainAmounts[start + i],
+    };
+  });
+
+  const maxProb = Math.max(...probs.slice(start, start + 6));
+  const avgRain = rainAmounts.slice(start, start + 6).reduce((a, b) => a + b, 0) / 6;
 
   let prediction;
   if (maxProb < 20) prediction = "Kemungkinan kecil hujan dalam 6 jam ke depan.";
@@ -114,13 +123,12 @@ async function fetchRainPrediction(lat, lon) {
   else prediction = "Kemungkinan besar hujan lebat dalam 6 jam ke depan.";
 
   return {
-    max_probability: maxProb,
+    max_probability: `${maxProb}%`, 
     avg_rain_mm: Number(avgRain.toFixed(2)),
     prediction,
     hourly_forecast: next6Hours,
   };
 }
-
 
 async function fetchSunData(lat, lon) {
   const now = new Date();
