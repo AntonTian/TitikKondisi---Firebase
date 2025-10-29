@@ -38,15 +38,15 @@ app.post("/weather", async (req, res) => {
   }
 });
 
-app.get("/rain/*", async (req, res) => {
+app.get(/^\/rain\/(-?\d+(\.\d+)?)\/(-?\d+(\.\d+)?)/, async (req, res) => {
   try {
-    const parts = req.path.split("/");
-    const lat = parseFloat(parts[2]);
-    const lon = parseFloat(parts[3]);
-
-    if (isNaN(lat) || isNaN(lon)) {
-      return res.status(400).json({ error: "Invalid coordinates" });
+    const match = req.url.match(/rain\/(-?\d+(\.\d+)?)\/(-?\d+(\.\d+)?)/);
+    if (!match) {
+      return res.status(400).json({ error: "Invalid coordinates format" });
     }
+
+    const lat = parseFloat(match[1]);
+    const lon = parseFloat(match[3]);
 
     const data = await fetchRainPrediction(lat, lon);
     res.json(data);
