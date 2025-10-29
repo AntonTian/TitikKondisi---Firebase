@@ -35,12 +35,23 @@ app.post("/weather", async (req, res) => {
   }
 });
 
+app.get("/rain/:lat/:lon", async (req, res) => {
+  const { lat, lon } = req.params;
+
+  try {
+    const data = await fetchRainPrediction(lat, lon);
+    res.json(data);
+  } catch (error) {
+    console.error("Rain prediction error:", error.message);
+    res.status(500).json({ error: "Gagal memuat prediksi hujan" });
+  }
+});
+
 // --- Main logic ---
 async function getConsolidatedData(lat, lon) {
   const [weather, sun] = await Promise.all([
     fetchWeatherData(lat, lon),
     fetchSunData(lat, lon),
-    fetchRainPrediction(lat, lon),
   ]);
   const moon = calculateMoonPhase();
   const indices = calculateIndices(weather);
