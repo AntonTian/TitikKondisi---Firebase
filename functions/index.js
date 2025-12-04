@@ -209,5 +209,79 @@ function calculateIndices(weather) {
   };
 }
 
+// --- Midtrans Payment ---
+require("dotenv").config();
+const midtransClient = require("midtrans-client");
+
+const snap = new midtransClient.Snap({
+  isProduction: false, 
+  serverKey: process.env.MIDTRANS_SERVER_KEY,
+  clientKey: process.env.MIDTRANS_CLIENT_KEY,
+});
+
+app.post("/payment", async (req, res) => {
+  try {
+    const parameter = {
+      transaction_details: {
+        order_id: "PAY-" + Date.now(),
+        gross_amount: 15000, 
+      },
+      item_details: [
+        {
+          id: "pro-sub",
+          price: 15000,
+          quantity: 1,
+          name: "Pro Subscription",
+        },
+      ],
+    };
+
+    const transaction = await snap.createTransaction(parameter);
+
+    res.json({
+      token: transaction.token,
+      redirect_url: transaction.redirect_url,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to create fixed payment" });
+  }
+});
+
+app.post("/donation", async (req, res) => {
+  try {
+    const { amount } = req.body;
+
+    if (!amount || amount < 1000) {
+      return res.status(400).json({ error: "Amount must be at least 1000" });
+    }
+
+    const parameter = {
+      transaction_details: {
+        order_id: "DONATE-" + Date.now(),
+        gross_amount: amount,
+      },
+      item_details: [
+        {
+          id: "donation",
+          price: amount,
+          quantity: 1,
+          name: "User Donation",
+        },
+      ],
+    };
+
+    const transaction = await snap.createTransaction(parameter);
+
+    res.json({
+      token: transaction.token,
+      redirect_url: transaction.redirect_url,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to create donation payment" });
+  }
+});
+
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => console.log(`Server running on port http://localhost:${PORT}`));
