@@ -45,6 +45,7 @@ router.post("/register", async (req, res) => {
     await userRef.set({
       email,
       password, 
+      isPro: false,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
@@ -88,7 +89,7 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    res.status(200).json({ message: "Login successful" });
+    res.status(200).json({ message: "Login successful", isPro: userDoc.data().isPro || false });
   } catch (err) {
     console.error("Login error:", err);
     res.status(500).json({ error: err.message });
